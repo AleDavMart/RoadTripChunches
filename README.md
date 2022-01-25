@@ -8,3 +8,11 @@ small souvenirs of the places I have visited.
 ###UML Diagram: 
 
 
+### Adyen's Test Cards for Payment: 
+https://docs.adyen.com/development-resources/test-cards/test-card-numbers
+
+CREATE TABLE sales(
+PSP_Reference VARCHAR NOT NULL PRIMARY KEY,
+total INT NOT NULL,
+items_sold INT NOT NULL,
+)
