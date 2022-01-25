@@ -2,7 +2,7 @@
 // require('dotenv').config()
 const dotenv = require("dotenv"); //why is this better?
 const express = require ('express');
-const hbs = require ('Express-Handlebars'); 
+// const hbs = require ("express-handlebars"); 
 const PORT = process.env.PORT || 3001; //if no env variable is set then default to 3001
 const cors = require ('cors');
 const path = require ('path');
@@ -10,6 +10,9 @@ const morgan = require ('morgan');
 const {uuid} = require ("uuidv4");// for uniqure identifiers
 const { Client, Config, CheckoutAPI} = require ("@adyen/api-library");
 const { get, request } = require("http");
+const { response } = require("express");
+const { CashHandlingDevice } = require("@adyen/api-library/lib/src/typings/terminal/cashHandlingDevice");
+const { rmSync } = require("fs");
 const app = express();
 
 //middleware 
@@ -41,20 +44,21 @@ const checkout = new CheckoutAPI(client); //creating a new instance of checkout 
 
 
 
-app.engine(
-    "handlebars",
-    hbs({
-        defaultLayout: "main",
-        layoutsDir: __dirname + "/views/layouts",
-        partialsDir: __dirname + "views/partials"
-    })
-)
+// app.engine(
+//     "handlebars",
+//     hbs({
+//         defaultLayout: "main",
+//         layoutsDir: __dirname + "/views/layouts",
+//         partialsDir: __dirname + "views/partials"
+//     })
+// )
 
 app.set("view engine", "handlebars"); 
 
 //temporary storage before moving this data to a database!!!!
 const paymentDataStore = {}; 
 
+// -------------------------------- ADYEN PAYMENT API ROUTES ---------------------------------//
 //Getting Payment Methods 
 app.get('/', async (req,res) =>{
     try {
@@ -71,9 +75,110 @@ app.get('/', async (req,res) =>{
     }
 })
 
+//Initiating a payment
+app.post('/api/initiatePayment', async function (req, res){
+    try {
+        const orderRef = uuid(); //generating a unique order reference 
 
+        const response = await checkout.payments ({
+            amount: { currency: "EUR", value: 10000},
+            reference: orderRef,
+            merchantAccount: process.env.MERCHANT_ACCOUNT,
+            channel: "Web",
+            additionalData:{
+                allow3DS2: true
+            },
+            returnUrl:`http://localhost:3001/api/handleShopperRedirect?orderRef=${orderRef}`,
+            browserInfo: req.body.browserInfo,
+            paymentMethod: req.body.paymentMethod 
+        })
 
+        let resultCode = response.resultCode;
+        let action = null; //some payments do not require additional action
 
+        if ( response.action){ //if there is an action needed this will be reflected back to the client here 
+            action = response.action;
+            paymentDataStore[orderRef]= action.paymentData;
+        }
+
+        res.json({resultCode, action}); //sending back JSON to client
+
+    } catch (error) {
+        console.error(error);
+    }
+})
+
+//Handle Shopper Redirect 
+app.all('/api/handlesho', async (req,res)=>{
+    const payload = {};
+    payload["details"] = req.method === "GET" ? req.query : req.body; // creating a payload to submit payment details
+
+    const orderRef = req.query.orderRef;
+    payload["paymentData"] = paymentDataStore[orderRef]; //retrieved the payment data from our store
+    delete paymentDataStore[orderRef]; 
+
+    try {
+        const response = await checkout.paymentsDetails(payload);
+
+        switch (response.resultCode) {
+            case "Authorised":
+                res.redirect("/success");
+                break;
+            case "Pending":
+            case "Received":
+                res.redirect("/pending");
+                break;  
+            case "Refused":
+                res.redirect("/failed");
+                break;   
+            default:
+                res.redirect("/error");
+                break;
+        }
+       
+    } catch (error) {
+        console.error(error);
+    }
+
+})
+ 
+app.get('/success', (req,res)=>{
+    res.render("success");
+})
+
+app.get('/pending', (req,res)=>{
+    res.render("pending");
+})
+
+app.get('/error', (req,res)=>{
+    res.render("error");
+})
+
+app.get('/failed', (req,res)=>{
+    res.render("failed");
+})
+
+//Handle submitting addtional details 
+app.post('/api/submitAdditionalDetails', async (req, res) =>{
+  const payload = {};
+
+  payload["details"] = req.body.details;
+  payload["paymentData"] = req.body.paymentData;
+
+  try {
+     const response = await checkout.paymentsDetails(payload);
+
+     let resultCode = response.resultCode;
+     let action = response.action || null;
+     
+     res.json({ action, resultCode});
+    
+  } catch (error) {
+      console.error(error);
+  }
+})
+
+//-------------- DATABASE API ROUTES --------// 
 
 //set up app to listen on set PORT
 app.listen( PORT, () => {
