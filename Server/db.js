@@ -5,7 +5,7 @@ const pool = new Pool({ //creating a new instance
     password: "Titos355", //postgress password
     host: "localhost",
     port: 5432, //default postgres
-    database:"onlineshop" //the postgres database created in database.sql
+    database:"roadtrip" //the postgres database created in database.sql
 });
 
 module.exports = pool;

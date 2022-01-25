@@ -5,6 +5,7 @@ const express = require ('express');
 // const hbs = require ("express-handlebars"); 
 const PORT = process.env.PORT || 3001; //if no env variable is set then default to 3001
 const cors = require ('cors');
+const pool = require("./db");//using pool allows for queries in postgress
 const path = require ('path');
 const morgan = require ('morgan');
 const {uuid} = require ("uuidv4");// for uniqure identifiers
@@ -13,6 +14,7 @@ const { get, request } = require("http");
 const { response } = require("express");
 const { CashHandlingDevice } = require("@adyen/api-library/lib/src/typings/terminal/cashHandlingDevice");
 const { rmSync } = require("fs");
+const pool = require("./DB.JS");
 const app = express();
 
 //middleware 
@@ -179,6 +181,14 @@ app.post('/api/submitAdditionalDetails', async (req, res) =>{
 })
 
 //-------------- DATABASE API ROUTES --------// 
+app.get('/products', async (res, req) =>{
+    try {
+        const allProducts = await pool.query("SELECT * FROM products");
+        res.json(allProducts.rows);
+    } catch (error) {
+        console.error(error);
+    }
+});
 
 //set up app to listen on set PORT
 app.listen( PORT, () => {
