@@ -3,7 +3,7 @@
 const dotenv = require("dotenv"); //why is this better?
 const express = require ('express');
 // const hbs = require ("express-handlebars"); 
-const PORT = process.env.PORT || 3001; //if no env variable is set then default to 3001
+const PORT = process.env.PORT || 8080; //if no env variable is set then default to 3001
 const cors = require ('cors');
 const pool = require("./db");//using pool allows for queries in postgress
 const path = require ('path');
@@ -14,7 +14,6 @@ const { get, request } = require("http");
 const { response } = require("express");
 const { CashHandlingDevice } = require("@adyen/api-library/lib/src/typings/terminal/cashHandlingDevice");
 const { rmSync } = require("fs");
-const pool = require("./DB.JS");
 const app = express();
 
 //middleware 
@@ -181,14 +180,29 @@ app.post('/api/submitAdditionalDetails', async (req, res) =>{
 })
 
 //-------------- DATABASE API ROUTES --------// 
-app.get('/products', async (res, req) =>{
+
+//GET ALL PRODUCTS
+app.get('/products', async(res, req) =>{
     try {
-        const allProducts = await pool.query("SELECT * FROM products");
+        const allProducts = await pool.query("SELECT * FROM products"); 
         res.json(allProducts.rows);
+
     } catch (error) {
         console.error(error);
     }
 });
+
+//GET A SPECIFIC PRODUCT
+app.get('/products/id', async(req,res)=>{
+    try {
+        const {id} = req.params; // using the PK id to select a specific product
+        const product = await pool.query("SELECT * FROM products WHERE product_id = $1", [id]); //$1 can be anything since its dynamic and we are specifying in []
+
+        res.json(product.rows[0]); //getting only the first row
+    } catch (error) {
+        console.error(error); 
+    }
+})
 
 //set up app to listen on set PORT
 app.listen( PORT, () => {

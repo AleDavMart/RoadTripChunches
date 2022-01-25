@@ -8,6 +8,8 @@ CREATE TABLE products(
     image VARCHAR
 );
 
+INSERT INTO products (name, price, inventory) values ('Grand Canyon Patch', 1550, 10);
+
 CREATE TABLE payments(
     PSPReference SERIAL PRIMARY KEY NOT NULL, 
     product_ID INT , ---- possibly need to change to a foreign key
