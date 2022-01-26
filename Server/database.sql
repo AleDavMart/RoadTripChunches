@@ -19,3 +19,4 @@ CREATE TABLE payments(
     Succesful VARCHAR NOT NULL
 );
 
+DELETE FROM products WHERE id= 5;

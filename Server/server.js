@@ -14,6 +14,7 @@ const { get, request } = require("http");
 const { response } = require("express");
 const { CashHandlingDevice } = require("@adyen/api-library/lib/src/typings/terminal/cashHandlingDevice");
 const { rmSync } = require("fs");
+const { SuspendAccountHolderResponse } = require("@adyen/api-library/lib/src/typings/platformsAccount/suspendAccountHolderResponse");
 const app = express();
 
 //middleware 
@@ -54,7 +55,7 @@ const checkout = new CheckoutAPI(client); //creating a new instance of checkout 
 //     })
 // )
 
-app.set("view engine", "handlebars"); 
+// app.set("view engine", "handlebars"); 
 
 //temporary storage before moving this data to a database!!!!
 const paymentDataStore = {}; 
@@ -185,7 +186,12 @@ app.post('/api/submitAdditionalDetails', async (req, res) =>{
 app.get('/products', async(res, req) =>{
     try {
         const allProducts = await pool.query("SELECT * FROM products"); 
-        res.json(allProducts.rows);
+        res.json({
+            status: 'success',
+            data: {
+            
+            }
+        });
 
     } catch (error) {
         console.error(error);
