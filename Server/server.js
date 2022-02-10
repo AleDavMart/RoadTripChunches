@@ -3,7 +3,7 @@
 const dotenv = require("dotenv"); //why is this better?
 const express = require ('express');
 // const hbs = require ("express-handlebars"); 
-const PORT = process.env.PORT || 8080; //if no env variable is set then default to 3001
+const PORT = process.env.PORT || 4040; //if no env variable is set then default to 3001
 const cors = require ('cors');
 const pool = require("./db");//using pool allows for queries in postgress
 const path = require ('path');
@@ -183,15 +183,11 @@ app.post('/api/submitAdditionalDetails', async (req, res) =>{
 //-------------- DATABASE API ROUTES --------// 
 
 //GET ALL PRODUCTS
-app.get('/products', async(res, req) =>{
+app.get('/products', async(req, res) =>{
     try {
         const allProducts = await pool.query("SELECT * FROM products"); 
-        res.json({
-            status: 'success',
-            data: {
-            
-            }
-        });
+        res.json(allProducts.rows);
+      
 
     } catch (error) {
         console.error(error);
